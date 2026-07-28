@@ -1,0 +1,146 @@
+{
+  "zipmap_json": "1.1",
+  "title": "Demo Cooling Water Loop",
+  "drawing_number": "DEMO-001",
+  "revision": "A",
+  "image": {
+    "format": "png",
+    "width": 800,
+    "height": 600
+  },
+  "extracted_data": {
+    "welded": true,
+    "line_number": "DEMO-CW-001",
+    "sheet_number": "1 of 1",
+    "drawing_number": "DEMO-001",
+    "revision_number": "A",
+    "fluid_service": "Cooling Water",
+    "title_block_summary": "JOB DEMO, DRAWING NO. DEMO-001, LINE DEMO-CW-001, REV A, NOTES NOT TO SCALE",
+    "tagged_items": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "bill_of_materials": [
+      {
+        "item_number": "1",
+        "nps": "2\"",
+        "quantity": "12'-6\"",
+        "description": "Pipe-A106-B-SCH40-CARBON STEEL",
+        "specification": "SCH40",
+        "material_code": "A106-B",
+        "connection_types": "",
+        "unit_of_measurement": "FT",
+        "is_linear_qty": true
+      },
+      {
+        "item_number": "2",
+        "nps": "2\"",
+        "quantity": "4",
+        "description": "A234-WPB Elbow 90 LR (BW)",
+        "specification": "SCH40",
+        "material_code": "A234-WPB",
+        "connection_types": "BW",
+        "unit_of_measurement": "EA",
+        "is_linear_qty": false
+      },
+      {
+        "item_number": "3",
+        "nps": "2\"",
+        "quantity": "2",
+        "description": "Weld Neck Flange RF #150",
+        "flange_rating": "150",
+        "material_code": "A105",
+        "connection_types": "FLG",
+        "unit_of_measurement": "EA",
+        "is_linear_qty": false
+      },
+      {
+        "item_number": "4",
+        "nps": "2\"",
+        "quantity": "2",
+        "description": "Flange Kit 150 - (Spiral Wound, 316SS, Graphite)",
+        "flange_rating": "150",
+        "material_code": "316SS",
+        "connection_types": "FLG",
+        "unit_of_measurement": "EA",
+        "is_linear_qty": false
+      }
+    ],
+    "line_specifications": [],
+    "reference_drawings": [],
+    "continuation_drawings": [],
+    "nozzle_connections": [],
+    "tie_point_numbers": [],
+    "drawing_requirements": [
+      "WELDS - FW: 0, SW: 3"
+    ]
+  },
+  "b64": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAIAAAAVFBUnAAAOAklEQVR4nO3ZQYpExxVFQS/H+1+d0cgzTQziWFxeq/PHJRZQJF31DvS//vjjPwAADP3rxz8BAMBjBBYAwJjAAgAYE1gAAGMCCwBgTGABAIwJLACAMYEFADAmsAAAbgPr32ZmZmb2PxNYZmZmZuMJLDMzM7N/ZGD9+P8yAQB+nMACABgTWAAAYwILAGBMYAEAjAksAIAxgQUAMCawAADGBBYAwJjAAgAYE1gAAGMCCwBgTGABAIwJLACAMYEFADAmsAAAxgQWAMCYwAIAGBNYAABjAgsAYExgAQCMCSwAgDGBBQAwJrAAAMYEFgDAmMACABgTWAAAYwILAGBMYAEAjAksAIAxgQUAMCawAADGBBYAwJjAAgAYE1gAAGMCCwBgTGABAIwJLACAMYEFADAmsAAAxgQWAMCYwAIAGBNYAABjAgsAYExgAQCMCSwAgDGBBQAwJrAAAMYEFgDAmMACABgTWAAAYwILAGBMYAEAjAksAIAxgQUAMCawAADGBBYAwJjAAgAYE1gAAGMCCwBgTGABAIwJLACAMYEFADAmsAAAxgQWAMCYwAIAGBNYAABjAgsAYExgAQCMCSwAgDGBBQAwJrAAAMYEFgDAmMACABgTWAAAYwILAGBMYAEAjAksqP79d/fjnxyAYwILKoEFQCSwoBJYAEQCC6r/9+/c9wLgswQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiAQWVAILgEhgQSWwAIgEFlQCC4BIYEElsACIBBZUAguASGBBJbAAiF4O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",
+  "map_item_datasets": [
+    {
+      "schema_id": "hsc_9KQ",
+      "map_items": [
+        {
+          "id": "H-1",
+          "x": 62,
+          "y": 285,
+          "x2": 258,
+          "y2": 318,
+          "heat_number": "7Y4412",
+          "material_spec": "SA-106 Gr B",
+          "mtr": "MTR-2026-0142"
+        },
+        {
+          "id": "H-2",
+          "x": 275,
+          "y": 285,
+          "x2": 678,
+          "y2": 318,
+          "heat_number": "8K1077",
+          "material_spec": "SA-106 Gr B",
+          "mtr": "MTR-2026-0158"
+        }
+      ]
+    },
+    {
+      "schema_id": "wsc_01H2XYZ",
+      "map_items": [
+        {
+          "id": "W-101",
+          "x": 120,
+          "y": 300,
+          "x2": 160,
+          "y2": 245,
+          "size": "2\"",
+          "schedule": "80",
+          "material": "A106-B",
+          "weld_type": "BW"
+        },
+        {
+          "id": "W-102",
+          "x": 470,
+          "y": 300,
+          "x2": 515,
+          "y2": 360,
+          "size": "2\"",
+          "schedule": "80",
+          "material": "A106-B",
+          "weld_type": "BW"
+        },
+        {
+          "id": "W-103",
+          "x": 266,
+          "y": 95,
+          "x2": 320,
+          "y2": 130,
+          "size": "1\"",
+          "schedule": "80",
+          "material": "A106-B",
+          "weld_type": "SW"
+        }
+      ]
+    }
+  ]
+}

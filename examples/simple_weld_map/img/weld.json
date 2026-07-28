@@ -1,0 +1,41 @@
+{
+  "space": "img",
+  "width": 800,
+  "height": 600,
+  "schema": "weld",
+  "items": [
+    {
+      "id": "W-101",
+      "x": 120,
+      "y": 300,
+      "x2": 160,
+      "y2": 245,
+      "size": "2\"",
+      "schedule": "80",
+      "material": "A106-B",
+      "weld_type": "BW"
+    },
+    {
+      "id": "W-102",
+      "x": 470,
+      "y": 300,
+      "x2": 515,
+      "y2": 360,
+      "size": "2\"",
+      "schedule": "80",
+      "material": "A106-B",
+      "weld_type": "BW"
+    },
+    {
+      "id": "W-103",
+      "x": 266,
+      "y": 95,
+      "x2": 320,
+      "y2": 130,
+      "size": "1\"",
+      "schedule": "80",
+      "material": "A106-B",
+      "weld_type": "SW"
+    }
+  ]
+}

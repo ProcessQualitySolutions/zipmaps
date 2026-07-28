@@ -1,0 +1,28 @@
+{
+  "space": "img",
+  "width": 800,
+  "height": 600,
+  "schema": "heat",
+  "items": [
+    {
+      "id": "H-1",
+      "x": 62,
+      "y": 285,
+      "x2": 258,
+      "y2": 318,
+      "heat_number": "7Y4412",
+      "material_spec": "SA-106 Gr B",
+      "mtr": "MTR-2026-0142"
+    },
+    {
+      "id": "H-2",
+      "x": 275,
+      "y": 285,
+      "x2": 678,
+      "y2": 318,
+      "heat_number": "8K1077",
+      "material_spec": "SA-106 Gr B",
+      "mtr": "MTR-2026-0158"
+    }
+  ]
+}

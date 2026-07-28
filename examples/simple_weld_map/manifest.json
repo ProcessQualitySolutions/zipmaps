@@ -1,0 +1,18 @@
+{
+  "zipmap": "1.1",
+  "title": "Demo Cooling Water Loop",
+  "drawing_number": "DEMO-001",
+  "revision": "A",
+  "created": "2026-07-21T14:36:08Z",
+  "source": "img",
+  "image": {
+    "file": "drawing.png",
+    "width": 800,
+    "height": 600
+  },
+  "types": [
+    "heat",
+    "weld"
+  ],
+  "extracted_data": true
+}

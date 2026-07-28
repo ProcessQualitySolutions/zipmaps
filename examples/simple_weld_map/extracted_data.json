@@ -1,0 +1,62 @@
+{
+  "welded": true,
+  "line_number": "DEMO-CW-001",
+  "sheet_number": "1 of 1",
+  "drawing_number": "DEMO-001",
+  "revision_number": "A",
+  "fluid_service": "Cooling Water",
+  "title_block_summary": "JOB DEMO, DRAWING NO. DEMO-001, LINE DEMO-CW-001, REV A, NOTES NOT TO SCALE",
+  "tagged_items": ["1", "2", "3", "4"],
+  "bill_of_materials": [
+    {
+      "item_number": "1",
+      "nps": "2\"",
+      "quantity": "12'-6\"",
+      "description": "Pipe-A106-B-SCH40-CARBON STEEL",
+      "specification": "SCH40",
+      "material_code": "A106-B",
+      "connection_types": "",
+      "unit_of_measurement": "FT",
+      "is_linear_qty": true
+    },
+    {
+      "item_number": "2",
+      "nps": "2\"",
+      "quantity": "4",
+      "description": "A234-WPB Elbow 90 LR (BW)",
+      "specification": "SCH40",
+      "material_code": "A234-WPB",
+      "connection_types": "BW",
+      "unit_of_measurement": "EA",
+      "is_linear_qty": false
+    },
+    {
+      "item_number": "3",
+      "nps": "2\"",
+      "quantity": "2",
+      "description": "Weld Neck Flange RF #150",
+      "flange_rating": "150",
+      "material_code": "A105",
+      "connection_types": "FLG",
+      "unit_of_measurement": "EA",
+      "is_linear_qty": false
+    },
+    {
+      "item_number": "4",
+      "nps": "2\"",
+      "quantity": "2",
+      "description": "Flange Kit 150 - (Spiral Wound, 316SS, Graphite)",
+      "flange_rating": "150",
+      "material_code": "316SS",
+      "connection_types": "FLG",
+      "unit_of_measurement": "EA",
+      "is_linear_qty": false
+    }
+  ],
+  "line_specifications": [],
+  "reference_drawings": [],
+  "continuation_drawings": [],
+  "nozzle_connections": [],
+  "tie_point_numbers": [],
+  "drawing_requirements": ["WELDS - FW: 0, SW: 3"]
+}
