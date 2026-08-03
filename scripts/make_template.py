@@ -22,7 +22,8 @@ import _bootstrap  # noqa: F401
 from _bootstrap import SKILL_ROOT
 from zipmap import SCHEMATA_DIR, TEMPLATE_SUFFIX, ZipmapError, save_template
 
-STARTER_SCHEMAS = SKILL_ROOT / "assets" / "schemas"
+# Examples only — nothing in the format requires these types or their fields.
+STARTER_SCHEMAS = SKILL_ROOT / "assets" / "starter_schemas"
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -2,12 +2,14 @@
 name: zipmaps
 description: >-
   Create, validate, convert, and render transportable weld/flange/heat maps
-  stored as .zipmap files — a plain zip of a single construction drawing
-  (single-page PDF and/or PNG), JSON map-item data with x/y + x2/y2
-  coordinates, the JSON Schemas that define each item type, and optionally
-  the drawing's extraction record (bill of materials, drawing parameters).
-  Use when the user works with .zipmap files or wants a portable weld map,
-  flange map, heat map, or any drawing-plus-mapped-items package:
+  stored as .zipmap files — a deliberately flexible, portable package: a plain
+  zip of a single construction drawing (single-page PDF and/or PNG), JSON
+  map-item data with x/y + x2/y2 coordinates, the JSON Schemas that define each
+  item type (open — you define the fields), and optionally the drawing's
+  extraction record (bill of materials, drawing parameters).
+  Use when the user works with .zipmap files, wants a portable weld map,
+  flange map, heat map, or any drawing-plus-mapped-items package, or wants to
+  translate a map out of one system's format into another's for API upload:
   scaffolding one, saving (which renders the PDF to PNG, converts PDF-point
   coordinates to pixels, bounds-checks, and schema-validates),
   opening/validating one, producing an HTML overlay or interactive HTML
@@ -45,6 +47,76 @@ it to `sys.path` itself. Image-only zipmaps run on the **standard library
 alone**; PDF-backed zipmaps additionally need `pymupdf`
 (`pip install pymupdf`). If `jsonschema` is installed it is used for schema
 validation; otherwise a bundled draft-07-subset validator takes over.
+
+## The format is open on purpose
+
+**zipmaps standardizes the container, not the content.** Only three things are
+fixed, and they are the minimum needed for a drawing and its points to survive
+a trip between systems:
+
+| Fixed by the format | Entirely yours |
+|---|---|
+| The archive layout (`manifest.json`, `schemata/`, `img/`, optional `pdf/`) | Which item **types** exist — `weld`, `support`, `tie_in`, `punch`, `valve`, anything |
+| The data-file wrapper: `space`, `width`, `height`, `schema`, `items` | Every **field** on an item beyond the five below — names, types, nesting, units, language |
+| Five item fields: `id`, `x`, `y`, `x2`, `y2` (numbers, in bounds) | The whole of `extracted_data.json` — an opaque object the format never inspects |
+
+JSON is usually a strictness tool; here the schemas are used the other way
+round — as *documentation that travels*. A schema in `schemata/` says "this is
+what my fields mean," not "this is what fields are allowed to be." So:
+
+- `"additionalProperties": true` is the default posture. Keep extra fields;
+  don't prune what you don't recognize.
+- **Never rename, normalize, translate, or drop a source system's field names**
+  to look more like the starters in `assets/starter_schemas/`. Those three
+  files are examples that `init.py --types` copies — not a vocabulary the
+  format endorses. If the source calls it `joint_no`, the zipmap calls it
+  `joint_no`, and the schema you write describes `joint_no`.
+- A new item type is a new schema file. It never requires a format revision,
+  a code change, or permission.
+- `.zipmapt` templates and server-side `schema_id`s exist for the same reason:
+  the authority over field meaning lives with the project or the receiving
+  system, never in this skill.
+
+### Translating between systems
+
+The common job this format is built for: **take a map that lives in system A's
+shape and hand it to system B's API.** That mapping is judgment work — field
+names differ, units differ, one system's `status` is another's
+`bolt_up_state` — which is exactly what you (an AI) are for, while the
+mechanical half stays scripted.
+
+```
+system A export  ──you map the fields──▶  schemata/*.schema.json + <type>.json
+   (CSV, XML, a                             │
+    vendor's JSON,                          ▼   scripts/zm.py save :: to_json
+    a marked-up PDF)                   mymap.zipmap ──▶ mymap.zipmap.json ──▶ POST to B
+```
+
+Working rules for a translation:
+
+1. **Write the schema to fit the data, not the data to fit a schema.** Read a
+   sample of the source, name the types and fields it actually has, and author
+   `schemata/<type>.schema.json` from that. Only `id`/`x`/`y`/`x2`/`y2` are
+   non-negotiable — supply `x2`/`y2` equal to `x`/`y` if the source has no
+   second point and the type is a plain pin.
+2. **Carry unknown fields through.** A field you can't interpret still belongs
+   in the item; describe it loosely (`{"type": "string"}`) or leave it to
+   `additionalProperties`. Dropping it is data loss the receiver can't undo.
+3. **Coordinates are the one thing you must get right**, and you don't compute
+   them: put PDF-space numbers in `pdf/<type>.json` and let `save.py` derive
+   pixels. Bounds and space are checked for you.
+4. **Match the target's `schema_id`s at the end, not the field names up
+   front.** Export names each dataset's server-side schema id; the receiving
+   system validates the fields against its own definition. Get real ids from
+   that system — never invent one.
+5. If the target's schema genuinely demands different names, do that rename
+   **once, explicitly, as the last step before export**, and say so — not
+   silently while authoring.
+
+The output is meant to be push-ready: `to_json.py` emits a single JSON object
+(base64 PNG + base64 PDF + extraction record + pixel-space items grouped by
+`schema_id`) that POSTs straight to the target endpoint with no unzipping and
+no coordinate math on the receiving side.
 
 ## Learn the format first
 
@@ -309,8 +381,12 @@ The wrapper of a data file is fixed; only `items` vary by type:
   corner when the type's schema hints `"zipmap": {"geometry": "rect"}`.
 - PDF space: points, origin **bottom-left**, y up. Image space: pixels,
   origin **top-left**, y down. The pipeline converts; you never do.
-- New item type = new schema: copy the closest starter from
-  `assets/schemas/`, adjust fields, save. See
+- **`id`, `x`, `y`, `x2`, `y2` are the only fields the format knows about.**
+  Everything beside them (`size`, `schedule`, `material` above) is that
+  project's vocabulary, carried verbatim.
+- New item type = new schema file, no format change: copy the closest starter
+  from `assets/starter_schemas/` — or write one from scratch when none is
+  close, which is normal — adjust fields, save. See
   `references/schema_authoring.md`.
 
 ## Worked example

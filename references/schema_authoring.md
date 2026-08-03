@@ -6,6 +6,27 @@ the `items` array of the matching `<type>.json` data files — not the wrapper
 (the wrapper's `space`/`width`/`height`/`schema`/`items` fields are enforced
 by the format itself).
 
+## The schema is yours
+
+zipmaps has **no standard item schema and no field dictionary**, deliberately.
+The format fixes five item fields — `id`, `x`, `y`, `x2`, `y2` — and stops.
+Type names are open (`weld`, `support`, `tie_in`, `punch`, `insulation`,
+`valve`, `soudure` — whatever the project calls them), and every other field is
+whatever the source system, the discipline, or the user says it is: flat or
+nested, imperial or metric, English or not.
+
+Write the schema **to describe the data you actually have**, not to make the
+data conform to somebody else's idea of a weld. That is what makes a zipmap a
+translation target: a map exported from one tracking system keeps that system's
+vocabulary inside a container any other tool can open, and the receiving
+system's `schema_id` — not this file — decides whether the fields are
+acceptable there. A schema here documents and sanity-checks; it is not a
+gatekeeper.
+
+Practical consequences: prefer permissive types, mark almost nothing
+`required`, keep `additionalProperties` open, and never drop a source field
+because you couldn't classify it.
+
 > **Not to be confused with the drawing's extraction record.** `schemata/`
 > defines the things placed *on* the drawing — welds, flanges, heats, each
 > with coordinates. `extracted_data.json` is what was read *off* the
@@ -34,11 +55,18 @@ by the format itself).
   but a schema that requires them gives clearer errors.)
 
 - Add the type's real-world fields as properties — size, schedule, material,
-  rating, heat number, whatever the discipline needs. Mark truly mandatory
-  fields `required`; leave the rest optional.
+  rating, heat number, whatever the discipline (or the source system) actually
+  uses, under the names it actually uses. Mark truly mandatory fields
+  `required`; leave the rest optional. When in doubt, optional.
 
 - Keep `"additionalProperties": true` unless you specifically want to lock
-  the type down — transportability favors tolerance of extra fields.
+  the type down — transportability favors tolerance of extra fields. A strict
+  schema makes a map that only your system can accept, which is the opposite
+  of the point.
+
+- Nested objects and arrays are fine (`"inspection": {"type": "object"}`,
+  `"repairs": {"type": "array"}`). Only the five coordinate/id fields have to
+  be flat scalars.
 
 - **Do not** enforce `id` uniqueness in a schema; the format is deliberately
   unopinionated about numbering.
@@ -84,16 +112,40 @@ type↔schema bindings for everyone:
 python scripts/to_json.py mymap --schema-id weld=wsc_01H2XYZ --bind
 ```
 
-Starter schemas in `assets/schemas/` ship **without** ids: an id is specific
+Starter schemas in `assets/starter_schemas/` ship **without** ids: an id is specific
 to your server and project, so `to_json.py` fails with a clear message until
 you supply one. Get real ids from the tracking system's map-item schema
 listing rather than inventing them.
 
 ## Starter schemas
 
-`assets/schemas/` ships ready-to-copy schemas (`scripts/init.py --types`
-copies them): `weld` (flag), `flange` (flag), `heat` (rect). Copy one as a
-starting point for a new type and rename file + fields.
+`assets/starter_schemas/` ships three ready-to-copy examples
+(`scripts/init.py --types` copies them): `weld` (flag), `flange` (flag),
+`heat` (rect). Copy one as a starting point for a new type and rename file +
+fields — or ignore them entirely and write your own; they carry no authority.
+Their field names (`weld_type`, `torque_spec`, `mtr`) are one team's
+vocabulary, not the format's. See `assets/starter_schemas/README.md`.
+
+When the project has a `.zipmapt` template, **that** is its standard — open it
+and build on its schemata instead of the starters.
+
+## Translating another system's map
+
+Authoring a schema for data that came out of some other tracker, CSV, or
+marked-up drawing:
+
+1. Sample the source and list the fields it really has.
+2. Name the type after what the source calls it.
+3. Map only the geometry: source location → `x`/`y`, label/leader anchor or
+   opposite corner → `x2`/`y2` (duplicate `x`/`y` when there is no second
+   point). `id` is the source's own identifier, as a string.
+4. Declare every remaining field permissively, in the source's own names.
+   Fields you can't interpret still go in — loosely typed or left to
+   `additionalProperties`.
+5. Bind the target system's `schema_id` last, once you know it.
+
+Any renaming the destination demands happens explicitly at export time, not
+quietly while authoring.
 
 ## Validator support
 

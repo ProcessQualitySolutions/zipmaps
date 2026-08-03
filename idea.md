@@ -194,6 +194,11 @@ Division of labor:
 - **Toolable:** because the format is dumb (zip + JSON Schema + PNG), anything can read
   it — a web viewer, a Python script, QC Database import, or Claude itself.
 - **Extensible:** new map-item types are just new schema files; no format revision.
+- **Open:** only the container and five item fields (`id`, `x`, `y`, `x2`, `y2`) are
+  standardized. Field names and vocabularies belong to the project or the receiving
+  system, so a map can be packaged in whatever shape it already has — which makes the
+  format a natural **translation target** between systems: convert once, and the
+  `.zipmap.json` export POSTs straight to the destination's API.
 - **Verifiable:** the save gate means a `.zipmap` that exists is a `.zipmap` that
   validates — consumers can trust the contract.
 

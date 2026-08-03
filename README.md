@@ -11,6 +11,28 @@ title-block parameters — an opaque JSON object the format does not
 constrain). Every valid zipmap contains a PNG of the drawing, so web readers
 display it with zero conversion.
 
+## Flexible on purpose
+
+zipmaps standardizes **the container, not the content**. Fixed: the archive
+layout, the data-file wrapper (`space`, `width`, `height`, `schema`, `items`),
+and five item fields — `id`, `x`, `y`, `x2`, `y2`. Open: which item types exist,
+and every other field on them. `weld`, `flange`, `heat` are examples that ship
+in `assets/starter_schemas/`, not a vocabulary the format endorses; `support`,
+`tie_in`, `punch`, or a type named in another language works identically the
+moment a schema sits beside the data.
+
+The schemas inside a zipmap are **documentation that travels**, not a gate.
+Keep `additionalProperties` open, require little, and carry a source system's
+field names through verbatim.
+
+That is what makes it a translation target: point an AI at a map living in one
+system's format — a vendor JSON export, a CSV, a marked-up drawing — have it
+author matching schemas and coordinate data, run it through `save` and
+`to_json`, and the result is a single JSON object ready to POST straight to the
+*target* system's API, where that system validates the fields against its own
+schema via `schema_id`. The mapping is judgment work; the coordinate math,
+bounds checks, rendering, and packaging are scripts.
+
 - Concept: `idea.md`
 - Normative spec: `references/format_spec.md`
 - API interchange spec: `references/zipmap_json_spec.md`

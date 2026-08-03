@@ -5,6 +5,32 @@ drawing with its map-item data (welds, flanges, heat numbers, or any other
 point/region data type) and the JSON Schemas that define that data. It is
 self-contained, self-describing, and web-ready by construction.
 
+## Scope of this specification
+
+This spec is deliberately narrow. It standardizes **the container and the
+geometry, and nothing else**:
+
+| Normative here | Out of scope, by design |
+|---|---|
+| Archive layout and file names | Which map-item **types** a zipmap contains |
+| `manifest.json` fields | Any item **field** other than `id`, `x`, `y`, `x2`, `y2` |
+| The data-file wrapper (`space`, `width`, `height`, `schema`, `items`) | Field naming conventions, units, vocabularies, languages |
+| Item `id` (string) and the four coordinates (numbers, in bounds) | The contents of `extracted_data.json` |
+| Coordinate spaces and the PDF→pixel transform | Whether a map's fields are *correct* for any given system |
+
+A conforming reader must therefore accept item objects whose fields it has
+never seen, and a conforming writer must not strip them. Type names are free
+(`weld.json`, `support.json`, `tie_in.json`, `punch.json` are all equally
+valid); the only constraint is that a `<type>.json` data file has a matching
+`schemata/<type>.schema.json` beside it.
+
+This is what makes the format a viable **interchange and translation target**:
+a map exported from one tracking system can be packaged with that system's own
+field names intact, moved as a single file, and then validated against the
+*receiving* system's definitions via `schema_id` at ingest (see
+`zipmap_json_spec.md`). The zipmap never has to agree with either system about
+what a weld is — only about where it sits on the sheet.
+
 ## Archive layout
 
 ```

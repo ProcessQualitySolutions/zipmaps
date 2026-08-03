@@ -27,7 +27,8 @@ import _bootstrap  # noqa: F401
 from _bootstrap import SKILL_ROOT
 from zipmap import FORMAT_VERSION, IMG_DIR, MANIFEST, PDF_DIR, SCHEMATA_DIR
 
-STARTER_SCHEMAS = SKILL_ROOT / "assets" / "schemas"
+# Examples only — nothing in the format requires these types or their fields.
+STARTER_SCHEMAS = SKILL_ROOT / "assets" / "starter_schemas"
 
 
 def main(argv: list[str] | None = None) -> int:
