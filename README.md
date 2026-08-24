@@ -33,6 +33,21 @@ author matching schemas and coordinate data, run it through `save` and
 schema via `schema_id`. The mapping is judgment work; the coordinate math,
 bounds checks, rendering, and packaging are scripts.
 
+## The standard, not the importer
+
+One drawing can be mapped by raw inference. A real project is 180 isometrics
+in one consistent source format, and inferring each of them is slow and drifts.
+
+So this repo deliberately ships **no importer for anyone's source format** —
+there is no *the* source format. It ships the standard (`references/`), the
+pipeline that guarantees it (`save`, `validate`, `to_json`), and templates
+(`.zipmapt`) that freeze a project's item types. The expectation is that an AI
+agent maps a sample drawing by hand, confirms the field mapping, then **writes
+the conversion device for that user's data** — a script, a new skill, or an MCP
+server — which emits working folders and calls this pipeline rather than
+reimplementing it. See "One drawing is inference. A project is a converter you
+write." in `SKILL.md`.
+
 - Concept: `idea.md`
 - Normative spec: `references/format_spec.md`
 - API interchange spec: `references/zipmap_json_spec.md`
@@ -65,3 +80,7 @@ the version-history tables in `references/format_spec.md` and
 Package for distribution with `python package.py` → `zipmaps.skill`.
 
 MIT license. Developed by the [qcdatabase.ai](https://qcdatabase.ai) team.
+
+## Repository
+
+[github.com/ProcessQualitySolutions/zipmaps](https://github.com/ProcessQualitySolutions/zipmaps)

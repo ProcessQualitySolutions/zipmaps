@@ -187,6 +187,25 @@ Division of labor:
 - **Inference does:** authoring schemas for a new item type on request, reading a
   drawing to extract weld/flange locations into JSON, answering questions about a map.
 
+### At project scale, inference writes the converter instead
+
+A single drawing can be mapped by raw inference. A real construction project is
+dozens or hundreds of drawings arriving in one consistent source format (a vendor
+JSON, a CSV export, a folder of marked-up PDFs, a database), and hand-mapping each
+one by inference is both slow and inconsistent across the batch.
+
+So the intended shape of the work at scale is: **the skill is the standard; the
+agent builds the conversion device.** Map a sample by hand to learn the source's
+shape, confirm the field mapping with the user, freeze the item types into a
+`.zipmapt`, then write whatever conversion vehicle suits the source and how the
+user will run it — a script in their repo, a purpose-built skill, or an MCP server.
+That converter emits working folders and calls this pipeline; it never
+reimplements the coordinate math, rendering, or packaging.
+
+This is why the repo ships no importer for any particular source format: there
+isn't one to ship. The importer is generated per user, per data source, on top of
+the standard.
+
 ## Why This Wins
 
 - **Transportable:** email a `.zipmap`, drop it in SharePoint, attach it to a package —

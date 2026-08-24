@@ -1,26 +1,20 @@
 ---
 name: zipmaps
 description: >-
-  Create, validate, convert, and render transportable weld/flange/heat maps
-  stored as .zipmap files — a deliberately flexible, portable package: a plain
-  zip of a single construction drawing (single-page PDF and/or PNG), JSON
-  map-item data with x/y + x2/y2 coordinates, the JSON Schemas that define each
-  item type (open — you define the fields), and optionally the drawing's
-  extraction record (bill of materials, drawing parameters).
-  Use when the user works with .zipmap files, wants a portable weld map,
-  flange map, heat map, or any drawing-plus-mapped-items package, or wants to
-  translate a map out of one system's format into another's for API upload:
-  scaffolding one, saving (which renders the PDF to PNG, converts PDF-point
-  coordinates to pixels, bounds-checks, and schema-validates),
-  opening/validating one, producing an HTML overlay or interactive HTML
-  viewer, printing a paginated PDF map sheet (fpdf2), exporting a
-  .zipmap.json interchange document (base64 PNG for web views + base64
-  single-page PDF for turnover + extraction data + pixel-space items keyed
-  by server-side schema id) to POST to an API, or working with .zipmapt
-  templates. Multiple steps run as one chained command
-  via scripts/zm.py
-  (schemata-only archives that standardize item types). Image-only zipmaps
-  need no third-party packages; PDF-backed ones need pymupdf.
+  Create, validate, convert, and render weld/flange/heat maps stored as .zipmap
+  files — a flexible zip of one drawing (single-page PDF and/or PNG), JSON
+  map-item data with x/y + x2/y2 coordinates, open JSON Schemas defining each
+  item type, and optionally the extraction record. Use when the user handles
+  .zipmap/.zipmapt files, wants a portable weld map, flange map, heat map, or
+  any drawing-plus-items package, or translates a map between system formats
+  for API upload: scaffolding, saving (renders PDF to PNG, converts PDF points
+  to pixels, bounds-checks, schema-validates), opening/validating, HTML overlay
+  or interactive viewer, paginated PDF map sheet (fpdf2), or exporting a
+  .zipmap.json interchange doc to POST to an API. For one drawing, map by
+  inference; for a project of many, emit into this standard and write the
+  conversion device — a script, skill, or MCP server — rather than hand-mapping
+  each. Steps chain via scripts/zm.py. Image-only zipmaps need only the
+  standard library; PDF-backed ones need pymupdf.
 license: MIT
 ---
 
@@ -117,6 +111,95 @@ The output is meant to be push-ready: `to_json.py` emits a single JSON object
 (base64 PNG + base64 PDF + extraction record + pixel-space items grouped by
 `schema_id`) that POSTs straight to the target endpoint with no unzipping and
 no coordinate math on the receiving side.
+
+## One drawing is inference. A project is a converter you write.
+
+You can absolutely build a zipmap by raw inference — read the source, author
+the schemas and data files by hand, save. For **one** drawing that is the
+right move, and the rest of this skill assumes it.
+
+But a real construction project is never one drawing. It is a pipe rack with
+180 isometrics, a vendor export covering a whole unit, a folder of marked-up
+PDFs from one contractor in one consistent format. Hand-authoring 180 maps by
+inference is slow, expensive, and — worse — **inconsistent**: item 4,000 gets
+mapped by a differently-primed model than item 12, and nothing catches the
+drift.
+
+**So: after the first one or two maps, stop inferring and write the
+converter.** Your job shifts from *doing the conversion* to *building the
+thing that does the conversion*, tailored to the source format in front of
+you.
+
+```
+drawing 1  ──inference──▶  a working zipmap        (you learn the source shape here)
+drawing 2  ──inference──▶  a second one            (confirms the pattern, exposes edge cases)
+drawings 3..N ──────────▶  YOU WRITE A CONVERTER ──▶ zipmaps, deterministically
+```
+
+**This skill is the standard, not the converter.** It defines what a valid
+`.zipmap` is and gives you the pipeline that guarantees it (`save`,
+`validate`, `to_json`). It deliberately does **not** ship an importer for
+anyone's source format, because there is no such thing as *the* source
+format — it's a CSV this week, a Navisworks export next week, an XML
+schedule after that. The converter is the piece that has to be written fresh
+for each user's data, and writing it is your job.
+
+### What to build
+
+Pick the delivery vehicle that fits how the user will actually run it:
+
+| Build this | When |
+|---|---|
+| **A script** (`convert_<source>.py` in their repo) | The default. One source format, run from the command line or a loop over a folder. Fastest to write, easiest for them to read and tweak. |
+| **A new skill** (its own `SKILL.md` + scripts) | The conversion needs judgment on every run — reading a drawing, deciding item types, resolving ambiguity — and they'll do it repeatedly with an AI in the loop. |
+| **An MCP server** | The data lives behind an API or database, or the conversion should be callable from any Claude session/tool, not just this repo. |
+| **A batch runner around the scripts** | The per-drawing mapping is already trivial and the real work is looping, retrying, and reporting across N drawings. |
+
+Whatever the vehicle, the rules are the same:
+
+1. **It emits into this format; it never reimplements it.** The converter's
+   job ends at writing a working folder — `schemata/*.schema.json`,
+   `pdf/<type>.json` (or `img/`), `manifest` meta, `extracted_data.json`. Then
+   it calls `scripts/zm.py save … :: validate …` (or imports `zipmap` from
+   `src/`) and lets the pipeline do coordinates, bounds, rendering, and
+   packaging. **Never** hand-roll the zip, the PDF→PNG render, or the
+   point→pixel math in a converter — that's exactly the duplication this
+   format exists to prevent.
+2. **Schemas are authored once, by you, from a sample — then reused.** Do the
+   field-mapping judgment on drawings 1–2, freeze the result as a `.zipmapt`
+   template, and have the converter graft that template onto every subsequent
+   map (`init --from-template`). That is what keeps drawing 180 consistent
+   with drawing 1.
+3. **Field names still come through verbatim.** A converter makes the
+   *mechanics* deterministic; it does not license renaming or dropping the
+   source's fields. Same rules as above.
+4. **It must be re-runnable and idempotent.** Sources get revised. Re-running
+   over the same folder should reproduce the same zipmaps, not append or
+   double-map.
+5. **It reports, per drawing.** Which succeeded, which failed validation and
+   why, which were skipped. On a 180-drawing run, a silent failure is the
+   expensive kind. `zm.py --json -k` gives you machine-readable per-step
+   results for exactly this.
+
+### How to approach it
+
+Ask what the source data actually is *before* mapping anything — a folder of
+PDFs, a CSV export, a vendor JSON, a database, a set of DWGs. Then:
+
+1. Get a representative sample and convert it by hand, through this skill.
+2. Show the user that map (`render.py`) and confirm the field mapping is right.
+   Do not scale up a mapping they haven't looked at.
+3. Freeze the schemas into a `.zipmapt`.
+4. Write the converter, run it over the sample, and check it reproduces the
+   hand-built map.
+5. Run the batch; report per-drawing results.
+6. Hand them the converter as a durable artifact — it belongs in their repo,
+   with a README, not in a scratch directory. Next month's drawings should
+   not need an AI to re-derive it.
+
+If the user asks for one map, give them one map. If the request or the folder
+listing implies many, say plainly that you'll build a converter rather than
+grind through them by inference, and get on with it.
 
 ## Learn the format first
 
