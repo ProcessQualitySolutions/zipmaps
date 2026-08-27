@@ -8,13 +8,12 @@ description: >-
   .zipmap/.zipmapt files, wants a portable weld map, flange map, heat map, or
   any drawing-plus-items package, or translates a map between system formats
   for API upload: scaffolding, saving (renders PDF to PNG, converts PDF points
-  to pixels, bounds-checks, schema-validates), opening/validating, HTML overlay
-  or interactive viewer, paginated PDF map sheet (fpdf2), or exporting a
-  .zipmap.json interchange doc to POST to an API. For one drawing, map by
-  inference; for a project of many, emit into this standard and write the
-  conversion device — a script, skill, or MCP server — rather than hand-mapping
-  each. Steps chain via scripts/zm.py. Image-only zipmaps need only the
-  standard library; PDF-backed ones need pymupdf.
+  to pixels, bounds-checks, schema-validates), capturing pre-labeled weld/tag
+  numbers off the PDF text layer (labels.py, explicit request only),
+  HTML overlay or interactive viewer, paginated PDF map sheet (fpdf2), or exporting a .zipmap.json interchange doc for API POST.
+  For many drawings, write a conversion script/skill/MCP server into this
+  standard rather than hand-mapping each. Steps chain via scripts/zm.py.
+  Image-only zipmaps need only the stdlib; PDF-backed ones need pymupdf.
 license: MIT
 ---
 
@@ -290,8 +289,10 @@ running the script directly. The individual scripts all still work unchanged.
 | `scripts/to_json.py` | **Export to `<name>.zipmap.json`** — base64 PNG (web) + base64 single-page PDF (turnover) + the extraction record + pixel-space items grouped by server-side `schema_id`, ready to POST. Takes a folder or a `.zipmap`. `--no-pdf` / `--no-extracted-data` / `--extracted-data FILE`. |
 | `scripts/make_template.py` | Build a `.zipmapt` (schemata only) from a working folder, a `.zipmap`, or `--types` starters. |
 | `scripts/render.py` | Self-contained HTML overlay of the `img/` layer (embedded PNG + SVG pins/rects/labels, color per type). Zero deps; the fastest visual proof. |
+| `scripts/review.py` | **Throw-away HTML review page** for a human to check a map before it is uploaded to a tracking system: tabs per item type (name + count), active type's labels at 50% opacity / others at 20%, full JSON data table below the image, and click-a-column-header to switch which field is drawn as the map label (render-only, never mutates data). Zero deps. Produce it **on request** when the user wants to review a map. |
 | `scripts/view.py` | Interactive single-file HTML viewer: pan/zoom, layer toggles, clickable items with a detail panel. Zero deps. Its `build_viewer_html()` function and embedded `ZIPMAP` JSON block are the reference pattern for building a custom web viewer or editor. |
 | `scripts/print_pdf.py` | Print a zipmap to a paginated PDF (drawing overlay page + item tables) with **fpdf2** (`pip install fpdf2`). Rarely needed, but it is the worked guide for constructing maps as PDFs — pixel→page-mm math, callout drawing, tabulation. |
+| `scripts/labels.py` | **Capture pre-labeled drawings**: list every text label on the PDF with its bounding box (pymupdf text layer — deterministic, no AI), filter by `--pattern` regex, and `--emit <type>` a ready `pdf/<type>.json` of rect items sitting on the label text. See **Pre-labeled drawings** below. |
 | `scripts/pdf2img.py` | Standalone single-page PDF → PNG at a DPI (save.py already does this). |
 | `scripts/transform.py` | Standalone PDF-space → pixel-space data conversion (save.py already does this). Pure math with explicit dims, so it works without pymupdf. |
 
@@ -472,6 +473,60 @@ The wrapper of a data file is fixed; only `items` vary by type:
   close, which is normal — adjust fields, save. See
   `references/schema_authoring.md`.
 
+## Pre-labeled drawings: capture existing weld numbers as label rects
+
+Some structural/piping drawings arrive with the weld numbers **already
+printed on the sheet by the engineer**. For those, don't place pins by
+inference — the PDF's text layer already knows exactly where every label
+sits, and `scripts/labels.py` reads it deterministically. The result is a
+map where each engineer-printed label becomes a clickable rectangle drawn
+**on the label text itself**.
+
+**Use this mode only when the user explicitly asks for it.** Whether a
+drawing's text really is per-weld labeling is often not obvious, so the
+decision belongs to the user. But do make them aware: when you're mapping a
+PDF-backed drawing and notice repeated tag-like text (`FW-101`, `SW 12`,
+`W1`…), say once that label-capture mode exists and is much faster and more
+accurate than inferring positions — then wait to be asked.
+
+Ground rules for the mode:
+
+- **Do not interpret leader lines.** The captured rectangle marks the label
+  text, not the weld the label's leader points at. That is the point of the
+  mode: the label becomes the clickable artifact, and chasing leader lines
+  by inference is exactly the slow, error-prone work this avoids.
+- **Bounding boxes come from the script, never from you.** Your inference is
+  limited to *which* labels are welds. Do that by scanning first, reading
+  the label list, and writing a `--pattern` regex that matches the project's
+  numbering; review what matched before emitting.
+- The emitted items are rects: `x/y` and `x2/y2` are opposite corners of the
+  label's bbox (plus `--pad`, default 1 pt), already in zipmap PDF space.
+  Hint the schema with `"zipmap": {"geometry": "rect"}` so renderers draw
+  the box. Each item also carries `label_text` (the raw text; `id` is the
+  regex's capture group 1 when one exists, else the full text).
+- Needs a **text-layer PDF** (and pymupdf). A scanned/raster drawing yields
+  nothing — tell the user OCR is outside this tool rather than silently
+  falling back to inference.
+- Duplicate label text produces duplicate ids; the scan report lists them
+  under `duplicates`. Leave them — id uniqueness is not the format's rule.
+
+The flow, once asked:
+
+```bash
+python scripts/zm.py labels mymap                          # scan: every label + bbox
+# read the list, decide the weld-number pattern, review the matches:
+python scripts/zm.py labels mymap --pattern "FW[- ]?\d+" --mode lines
+# emit the data file, set the schema geometry to rect, then the usual pipeline:
+python scripts/zm.py labels mymap --pattern "FW[- ]?\d+" --mode lines \
+        --emit weld -o mymap/pdf/weld.json :: save mymap :: render mymap
+```
+
+`--mode words` (default) treats each word as a label; `--mode lines` joins a
+whole text line, for labels with internal spaces (`FW 103`). Fields beyond
+the captured five still follow the normal authoring rules — merge in size,
+schedule, etc. from the weld list afterwards by editing `pdf/weld.json`, and
+let `save` re-derive pixels.
+
 ## Worked example
 
 `examples/simple_weld_map/` is a complete image-only working folder (drawing
@@ -492,6 +547,8 @@ After creating or modifying a zipmap, tell the user the archive path and
 give them the `render.py` HTML overlay (or a summary from `open.py`) so they
 can see their items on the drawing — the overlay is the human-readable
 deliverable. Use `view.py` instead when the user wants to explore the map
-(pan/zoom, click items for their fields), `print_pdf.py` when they ask for a
-printable/PDF copy, and `to_json.py` when the destination is an API rather
-than a person.
+(pan/zoom, click items for their fields), `review.py` when they ask to
+**review a map before uploading** it to a tracking system (tabbed layers,
+data table, switchable label field — a deliberate throw-away file),
+`print_pdf.py` when they ask for a printable/PDF copy, and `to_json.py`
+when the destination is an API rather than a person.

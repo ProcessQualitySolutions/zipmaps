@@ -53,7 +53,11 @@ write." in `SKILL.md`.
 - API interchange spec: `references/zipmap_json_spec.md`
 - Agent instructions: `SKILL.md`
 - Library: `src/zipmap/` (stdlib-only; `pymupdf` needed for PDF-backed maps)
-- CLI: `scripts/` (`init`, `save`, `open`, `validate`, `to_json`, `render`, `view`, `print_pdf`, `make_template`, `pdf2img`, `transform`)
+- CLI: `scripts/` (`init`, `save`, `open`, `validate`, `to_json`, `render`, `view`, `print_pdf`, `make_template`, `labels`, `review`, `pdf2img`, `transform`)
+- Pre-labeled drawings: `scripts/labels.py` captures engineer-printed weld/tag
+  numbers straight off the PDF text layer — deterministic bounding boxes, a
+  regex to pick the labels, and a ready `pdf/<type>.json` of clickable label
+  rectangles (no leader-line interpretation).
 - Bundled runner: `scripts/zm.py` — every command above as a subcommand, chained
   with `::` in a single process (`zm.py save m :: validate m :: render m`), plus
   job files and `--json` output. ~3.4x faster than the same steps as separate

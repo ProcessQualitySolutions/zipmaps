@@ -65,8 +65,10 @@ COMMANDS: dict[str, str] = {
     "to_json": "export a .zipmap.json interchange document",
     "render": "static HTML overlay (embedded PNG + SVG pins)",
     "view": "interactive single-file HTML viewer",
+    "review": "throw-away HTML review page (tabs, data table, label switching)",
     "print_pdf": "paginated PDF map sheet (needs fpdf2)",
     "make_template": "build a .zipmapt from a folder, .zipmap, or --types",
+    "labels": "list PDF text labels + bboxes; emit a pdf/<type>.json (needs pymupdf)",
     "pdf2img": "single-page PDF -> PNG at a DPI (needs pymupdf)",
     "transform": "PDF-space -> pixel-space data conversion",
 }
