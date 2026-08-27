@@ -416,7 +416,14 @@ python scripts/zm.py to_json mymap --schema-id weld=wsc_01H2XYZ --bind \
                   :: validate mymap.zipmap.json
 python scripts/zm.py to_json mymap                                # later: no flags needed
 python scripts/zm.py to_json mymap.zipmap -o payload.json --compact   # from an archive
-python scripts/to_json.py mymap --stdout --compact | curl -X POST -d @- ...
+
+# send to QC Database: wrap in the request envelope, gzip, POST (trailing slash!)
+python scripts/to_json.py mymap --stdout --compact \
+  | jq -c '{package_id: "<package-uuid>", mode: "append", document: .}' \
+  | gzip \
+  | curl -X POST "https://<host>/api/mapping/projects/<project-uuid>/zipmaps/" \
+         -H 'Content-Type: application/json' -H 'Content-Encoding: gzip' \
+         -H 'Authorization: Bearer <token>' --data-binary @-
 
 python scripts/to_json.py mymap --extracted-data bom.json   # record from an extractor
 python scripts/to_json.py mymap --no-pdf                    # web-only payload
@@ -428,9 +435,50 @@ wants its own invocation — `zm.py --json` refuses that combination rather than
 wrap a base64 PNG in a JSON line.)
 
 Get real ids from the tracking system's map-item schema list — **never
-invent one**; if none is known, ask the user rather than guessing. Export
-reads the `img/` layer, so **run `save.py` first** on a PDF-backed map to
-be sure that layer is current.
+invent one**; if none is known, ask the user rather than guessing. For QC
+Database the `schema_id` must be the server's **MapItemSchema UUID** — the
+server accepts nothing else: no slug, no name, no fallback. In particular,
+the exporter's last-resort fallback to a schema's `$id` URI produces an id
+the server cannot resolve, so never rely on it — fetch the UUID from the
+schema list endpoint (or the `list_map_item_schemas` MCP tool) and bind it
+explicitly with `--schema-id <type>=<uuid> --bind`. Export reads the `img/`
+layer, so **run `save.py` first** on a PDF-backed map to be sure that layer
+is current.
+
+### Sending to QC Database
+
+The live endpoint is:
+
+```
+POST /api/mapping/projects/{project_id}/zipmaps/
+```
+
+Four contract points that each independently kill an upload:
+
+- **The path has no `/v1/` and the trailing slash is mandatory.** A
+  slashless POST is caught by Django's `APPEND_SLASH` redirect, which
+  drops the body and bypasses the gzip middleware — the retry arrives
+  empty and un-decompressed.
+- **The body is an envelope, not a bare document.** POSTing a raw
+  `.zipmap.json` returns **422** every time. Wrap it:
+
+  ```json
+  { "package_id": "<uuid>", "mode": "append",
+    "document": { "zipmap_json": "1.1", "b64": "…", "map_item_datasets": [ … ] } }
+  ```
+
+  `mode` is `"append"` (add items) or `"replace"` (delete this drawing's
+  existing items for the submitted `schema_id`s, then insert).
+- **`schema_id` must be a MapItemSchema UUID** (see above).
+- **Size limits are real and layered.** The edge returns **413 at
+  ~32 MB on the wire**, so compress: with `Content-Encoding: gzip` the
+  JSON path accepts up to a **40 MB base64 aggregate** (all `b64` +
+  `pdf_b64` combined, pre-gzip). The multipart path caps at a **30 MB raw
+  aggregate**. The PNG itself is capped at **40 megapixels**
+  (width × height) — choose the render DPI so the sheet stays under it
+  (an ANSI D sheet at 300 DPI is 6600 × 10200 ≈ 67 MP and will be
+  rejected; at 200 DPI it is ≈ 30 MP and fits; letter at 300 DPI is
+  ≈ 8.4 MP, never a problem).
 
 Export is one-way: a `.zipmap.json` can't become a `.zipmap` by itself,
 because the schemata it dropped are what the archive format requires. (The

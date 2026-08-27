@@ -907,7 +907,9 @@ Consequences worth designing for:
 - **Raise your body limit deliberately.** Frameworks commonly default to
   1 MB (Express) or 2.5 MB (PHP), which rejects any real 300-DPI drawing.
   Pick a ceiling — 32 MB is generous — and document it, so senders can
-  re-render at a lower DPI rather than guess.
+  re-render at a lower DPI rather than guess. (QC Database's deployed
+  limits are in §12.1: 413 at ~32 MB on the wire, 40 MB base64 aggregate
+  via gzipped JSON, 30 MB raw multipart aggregate, 40-megapixel PNG cap.)
 - **Accept gzip.** `Content-Encoding: gzip` on the request typically halves
   a base64 PNG payload, because base64 of compressed data still has
   exploitable redundancy at the character level. Advertise support.
@@ -995,13 +997,31 @@ outside your system.
 ### 12.1 Shape
 
 ```http
-POST /api/v1/projects/{project_id}/zipmaps
+POST /api/mapping/projects/{project_id}/zipmaps/
 Content-Type: application/json
 Content-Encoding: gzip
 Authorization: Bearer …
 
-{ "zipmap_json": "1.0", "b64": "…", "map_item_datasets": [ … ] }
+{ "package_id": "…", "mode": "append",
+  "document": { "zipmap_json": "1.0", "b64": "…", "map_item_datasets": [ … ] } }
 ```
+
+This is the endpoint as **deployed in QC Database** (there is no `/v1/`
+segment in this path). Two wire-level details matter as much as the body:
+
+- **The trailing slash is mandatory.** A slashless POST is answered by
+  Django's `APPEND_SLASH` redirect instead of the view — the redirect
+  drops the request body and bypasses the gzip-decoding middleware, so
+  the upload silently dies.
+- **The body is an envelope, not a bare document** — see §12.2. A raw
+  `.zipmap.json` posted as the body is rejected with **422**.
+
+Concrete limits for this deployment: the edge returns **413** at roughly
+**32 MB on the wire**, so send `Content-Encoding: gzip`; the gzipped JSON
+path accepts up to a **40 MB aggregate of base64 payloads** (`b64` +
+`pdf_b64`, measured pre-gzip); the multipart path caps at a **30 MB raw
+aggregate**; and the embedded PNG is capped at **40 megapixels**
+(width × height) — pick the render DPI accordingly.
 
 Put the drawing's identity in the **path**, not in the body. The document's
 `drawing_number` is descriptive text (§4.2) and unsuited to routing.
@@ -1024,6 +1044,21 @@ line between the standard document and your API, and a client can no longer
 hand you a `.zipmap.json` file unmodified.
 
 Wrapping keeps the file a file. Prefer it.
+
+QC Database wraps. Its envelope is **required**, with exactly this shape:
+
+```json
+{ "package_id": "<uuid>", "mode": "append",
+  "document": { "zipmap_json": "1.1", "b64": "…", "map_item_datasets": [ … ] } }
+```
+
+`package_id` is the UUID of the package the drawing belongs to; `mode` is
+`"append"` or `"replace"` (§12.4); `document` is the unmodified
+`.zipmap.json`. A bare document with no envelope is a guaranteed **422**.
+Each dataset's `schema_id` inside the document must be the server's
+**MapItemSchema UUID** — the server resolves nothing else (no slug, no
+name), and an exporter-side fallback to a schema's `$id` URI produces an
+id the server cannot resolve (§15).
 
 ### 12.3 Response
 
@@ -1450,6 +1485,15 @@ The exporter resolves an id for each type in this order, first match wins:
 If no id resolves, **the export fails** — there is no default, no
 auto-generated id, and no way to emit a dataset without one.
 
+Beware step 3: a schema's `$id` is usually a URI
+(`https://example.com/weld.schema.json`), which is a syntactically valid
+`schema_id` but resolvable by no server. QC Database in particular accepts
+**only its MapItemSchema UUIDs** — no slug or name fallback — so an
+export that fell through to `$id` validates locally and then fails at
+stage 5 on the server. Fetch the real UUID from the schema list endpoint
+and bind it explicitly (`--schema-id <type>=<uuid> --bind`) so steps 1–2
+always answer first.
+
 **Publish your ids.** The single most useful thing you can do for senders is
 expose a list endpoint (`GET /map-item-schemas`) returning each schema's id,
 name, geometry, and field definitions. Otherwise every sender is guessing at
@@ -1468,8 +1512,12 @@ python scripts/to_json.py mymap --schema-id weld=wsc_01H2XYZ --bind
 python scripts/to_json.py mymap                     # -> mymap.zipmap.json
 python scripts/to_json.py mymap.zipmap -o body.json # from an archive
 python scripts/to_json.py mymap --compact           # minified, for the wire
-python scripts/to_json.py mymap --stdout --compact | \
-    curl -X POST -H 'Content-Type: application/json' -d @- https://…/zipmaps
+python scripts/to_json.py mymap --stdout --compact \
+  | jq -c '{package_id: "<package-uuid>", mode: "append", document: .}' \
+  | gzip \
+  | curl -X POST "https://…/api/mapping/projects/<project-uuid>/zipmaps/" \
+         -H 'Content-Type: application/json' -H 'Content-Encoding: gzip' \
+         --data-binary @-   # envelope + trailing slash: both mandatory (§12.1–12.2)
 
 python scripts/validate.py mymap.zipmap.json        # verify before sending
 ```
