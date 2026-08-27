@@ -467,8 +467,10 @@ Four contract points that each independently kill an upload:
     "document": { "zipmap_json": "1.1", "b64": "…", "map_item_datasets": [ … ] } }
   ```
 
-  `mode` is `"append"` (add items) or `"replace"` (delete this drawing's
-  existing items for the submitted `schema_id`s, then insert).
+  `mode` is `"append"` (add items) or `"replace"` (supersede at the
+  drawing level: any live drawing in the package sharing the same
+  non-empty `drawing_number` is soft-deleted — the whole drawing and
+  all its items — and a new drawing is created).
 - **`schema_id` must be a MapItemSchema UUID** (see above).
 - **Size limits are real and layered.** The edge returns **413 at
   ~32 MB on the wire**, so compress: with `Content-Encoding: gzip` the

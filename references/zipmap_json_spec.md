@@ -1053,8 +1053,12 @@ QC Database wraps. Its envelope is **required**, with exactly this shape:
 ```
 
 `package_id` is the UUID of the package the drawing belongs to; `mode` is
-`"append"` or `"replace"` (§12.4); `document` is the unmodified
-`.zipmap.json`. A bare document with no envelope is a guaranteed **422**.
+`"append"` or `"replace"` (§12.4 describes the design options; QC
+Database's deployed semantic for `replace` is whole-drawing supersede,
+not the per-schema item deletion sketched there — it soft-deletes any
+live drawing in the package sharing the same non-empty `drawing_number`,
+the whole drawing and all its items, then creates a new drawing);
+`document` is the unmodified `.zipmap.json`. A bare document with no envelope is a guaranteed **422**.
 Each dataset's `schema_id` inside the document must be the server's
 **MapItemSchema UUID** — the server resolves nothing else (no slug, no
 name), and an exporter-side fallback to a schema's `$id` URI produces an
