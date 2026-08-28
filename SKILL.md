@@ -288,7 +288,7 @@ running the script directly. The individual scripts all still work unchanged.
 | `scripts/validate.py` | All checks, no zip — accepts a working folder, a `.zipmap`, a `.zipmapt`, or a `.zipmap.json`. Exit code 0/1; use it to answer "is this file good?". |
 | `scripts/to_json.py` | **Export to `<name>.zipmap.json`** — base64 PNG (web) + base64 single-page PDF (turnover) + the extraction record + pixel-space items grouped by server-side `schema_id`, ready to POST. Takes a folder or a `.zipmap`. `--no-pdf` / `--no-extracted-data` / `--extracted-data FILE`. |
 | `scripts/make_template.py` | Build a `.zipmapt` (schemata only) from a working folder, a `.zipmap`, or `--types` starters. |
-| `scripts/render.py` | Self-contained HTML overlay of the `img/` layer (embedded PNG + SVG pins/rects/labels, color per type). Zero deps; the fastest visual proof. |
+| `scripts/render.py` | Self-contained HTML overlay of the `img/` layer (embedded PNG + SVG pins/rects/labels, color per type) **plus one data table per item type below the map** showing every field of every item. Zero deps; the fastest visual proof. |
 | `scripts/review.py` | **Throw-away HTML review page** for a human to check a map before it is uploaded to a tracking system: tabs per item type (name + count), active type's labels at 50% opacity / others at 20%, full JSON data table below the image, and click-a-column-header to switch which field is drawn as the map label (render-only, never mutates data). Zero deps. Produce it **on request** when the user wants to review a map. |
 | `scripts/view.py` | Interactive single-file HTML viewer: pan/zoom, layer toggles, clickable items with a detail panel. Zero deps. Its `build_viewer_html()` function and embedded `ZIPMAP` JSON block are the reference pattern for building a custom web viewer or editor. |
 | `scripts/print_pdf.py` | Print a zipmap to a paginated PDF (drawing overlay page + item tables) with **fpdf2** (`pip install fpdf2`). Rarely needed, but it is the worked guide for constructing maps as PDFs — pixel→page-mm math, callout drawing, tabulation. |
@@ -596,7 +596,8 @@ python scripts/zm.py to_json examples/simple_weld_map \
 After creating or modifying a zipmap, tell the user the archive path and
 give them the `render.py` HTML overlay (or a summary from `open.py`) so they
 can see their items on the drawing — the overlay is the human-readable
-deliverable. Use `view.py` instead when the user wants to explore the map
+deliverable, and it always includes one data table per item type below the
+map so nothing is hidden behind clicks. Use `view.py` instead when the user wants to explore the map
 (pan/zoom, click items for their fields), `review.py` when they ask to
 **review a map before uploading** it to a tracking system (tabbed layers,
 data table, switchable label field — a deliberate throw-away file),

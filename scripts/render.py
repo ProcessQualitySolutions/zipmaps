@@ -3,7 +3,9 @@
 Reads the img/ layer (the web-ready layer) of a working folder or a
 .zipmap archive and writes one HTML file: the drawing PNG embedded as
 base64 with an SVG overlay of every map item — flag items as a pin, leader
-line, and label; rect items as an outlined rectangle. Zero dependencies.
+line, and label; rect items as an outlined rectangle — followed by one
+data table per item type showing every field of every item, so the page
+stands alone as a complete human-readable preview. Zero dependencies.
 
 Geometry per type comes from the schema's optional top-level hint
     "zipmap": { "geometry": "flag" | "rect" }
@@ -83,6 +85,38 @@ def _item_svg(item: dict, geometry: str, color: str, fs: float) -> str:
     )
 
 
+def _type_table(stem: str, items: list, color: str) -> str:
+    """One HTML table per item type: column order = field order as first seen."""
+    columns: list[str] = []
+    for item in items:
+        if isinstance(item, dict):
+            for k in item:
+                if k not in columns:
+                    columns.append(k)
+    if not columns:
+        return (
+            f'<h3 style="color:{color}">{html.escape(stem)} (0)</h3>'
+            "<p>no items</p>"
+        )
+
+    def cell(v: object) -> str:
+        if v is None:
+            return ""
+        return html.escape(v if isinstance(v, str) else json.dumps(v))
+
+    head = "".join(f"<th>{html.escape(c)}</th>" for c in columns)
+    rows = "".join(
+        "<tr>" + "".join(f"<td>{cell(item.get(c))}</td>" for c in columns) + "</tr>"
+        for item in items
+        if isinstance(item, dict)
+    )
+    return (
+        f'<h3 style="color:{color}">{html.escape(stem)} ({len(items)})</h3>'
+        f'<div class="tw"><table><thead><tr style="background:{color}">{head}</tr></thead>'
+        f"<tbody>{rows}</tbody></table></div>"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -106,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     w, h = struct.unpack(">II", png[16:24])
     fs = max(12.0, min(w, h) * 0.018)  # label font size scaled to the drawing
 
-    shapes, legend = [], []
+    shapes, legend, tables = [], [], []
     for i, (stem, data) in enumerate(sorted(datasets.items())):
         color = PALETTE[i % len(PALETTE)]
         geometry = (schemas.get(stem, {}).get("zipmap") or {}).get("geometry", "flag")
@@ -118,19 +152,25 @@ def main(argv: list[str] | None = None) -> int:
         for item in items:
             if isinstance(item, dict):
                 shapes.append(_item_svg(item, geometry, color, fs))
+        tables.append(_type_table(stem, items, color))
 
     b64 = base64.b64encode(png).decode("ascii")
     name = target.stem if target.is_file() else target.name
     doc = f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>{html.escape(name)} — zipmap overlay</title>
-<style>body{{margin:16px;font-family:sans-serif;background:#fff}}svg{{max-width:100%;height:auto;border:1px solid #ccc}}</style>
+<style>body{{margin:16px;font-family:sans-serif;background:#fff}}svg{{max-width:100%;height:auto;border:1px solid #ccc}}
+h3{{margin:18px 0 6px;font-size:15px}}.tw{{overflow-x:auto}}
+table{{border-collapse:collapse;font-size:13px}}th,td{{border:1px solid #ddd;padding:3px 10px;text-align:left;white-space:nowrap}}
+th{{color:#fff}}tr:nth-child(even) td{{background:#fafaf8}}</style>
 </head><body>
 <h2 style="margin:0 0 4px">{html.escape(name)}</h2>
 <p style="margin:0 0 12px">{' &nbsp; '.join(legend) or 'no map items'}</p>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">
 <image href="data:image/png;base64,{b64}" width="{w}" height="{h}"/>
 {''.join(shapes)}
-</svg></body></html>
+</svg>
+{''.join(tables)}
+</body></html>
 """
     out = Path(args.output) if args.output else Path(f"{name}_overlay.html")
     out.write_text(doc, encoding="utf-8")
