@@ -149,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
             print(report.render(), file=sys.stderr)
             if doc is None:
                 return 1
+            print("streaming base64 document to stdout — pipe it onward "
+                  "(curl/gzip); it is machine-only, not for reading", file=sys.stderr)
             if args.compact:
                 json.dump(doc, sys.stdout, separators=(",", ":"))
             else:
@@ -168,6 +170,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     size_kib = output.stat().st_size / 1024
     print(f"wrote {output} ({size_kib:.1f} KiB)")
+    print("  base64 payload, machine-only: POST the file or `zm.py validate` it — "
+          "never read/open its contents")
     return 0
 
 

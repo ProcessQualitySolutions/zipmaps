@@ -176,6 +176,8 @@ th{{color:#fff}}tr:nth-child(even) td{{background:#fafaf8}}</style>
     out.write_text(doc, encoding="utf-8")
     total = sum(len(d.get("items", [])) for d in datasets.values())
     print(f"wrote {out} ({total} item(s) over {w}x{h} px)")
+    print("  open it in a browser — the HTML embeds the drawing as base64 and is "
+          "not for reading")
     return 0
 
 

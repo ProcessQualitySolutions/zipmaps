@@ -29,6 +29,9 @@ EXCLUDE_DIRS = {
 }
 EXCLUDE_SUFFIXES = {".pyc", ".pyo", ".skill", ".zipmap", ".log"}
 EXCLUDE_BASENAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
+# generated base64-embedding HTML (render/review/view output) never ships —
+# it is a per-map artifact, and packaged copies bait agents into reading b64
+GENERATED_HTML_SUFFIXES = ("_overlay.html", "_review.html", "_viewer.html")
 
 
 def _excluded(rel: Path) -> bool:
@@ -39,6 +42,8 @@ def _excluded(rel: Path) -> bool:
     if rel.suffix in EXCLUDE_SUFFIXES:
         return True
     if rel.name in EXCLUDE_BASENAMES:
+        return True
+    if rel.name.endswith(GENERATED_HTML_SUFFIXES):
         return True
     if rel.name.startswith("__temp"):
         return True

@@ -8,11 +8,12 @@ No backend, no dependencies, one file you can delete afterwards.
 
 What the page does:
 
-    - tabs above the image, one per map-item type: schema name + item count
+    - tabs below the image, one per map-item type: schema name + item count
     - the active type's labels render at 50% opacity in its prominent color;
       every other type renders at 20%; clicking the active tab deselects it
-      (all layers drop to 20% and the table hides)
-    - below the image, a table of the active type's complete JSON data
+      (all layers drop to 20%)
+    - below the tabs, one table per type with that type's complete JSON
+      data — every type's table is always shown, whatever tab is active
     - the first column is the text label drawn at each item's x/y; click any
       other column header to use that column as the label instead — a
       render-only, in-memory swap that never touches the data
@@ -107,17 +108,20 @@ REVIEW_TEMPLATE = """<!doctype html>
   header h1 { font-size: 16px; margin: 0; }
   header .sub { font-size: 12px; opacity: 0.75; }
   header .note { margin-left: auto; font-size: 11px; opacity: 0.6; }
-  #tabs { display: flex; gap: 6px; padding: 10px 16px 0; flex-wrap: wrap; }
+  #tabs { display: flex; gap: 6px; padding: 0 16px 10px; flex-wrap: wrap; cursor: pointer; }
   #tabs button { font: inherit; font-size: 13px; padding: 6px 14px; cursor: pointer;
-                 border: 1px solid #ccc; border-bottom: none; background: #e9e9e6;
-                 border-radius: 6px 6px 0 0; color: #444; }
-  #tabs button.active { background: #fff; font-weight: 700; border-top-width: 3px; }
+                 border: 1px solid #ccc; border-top: none; background: #e9e9e6;
+                 border-radius: 0 0 6px 6px; color: #444; }
+  #tabs button.active { background: #fff; font-weight: 700; border-bottom-width: 3px; }
   #tabs button .n { opacity: 0.65; font-weight: 400; }
-  #drawing { margin: 0 16px; background: #fff; border: 1px solid #ccc; }
+  #drawing { margin: 10px 16px 0; background: #fff; border: 1px solid #ccc; }
   #drawing svg { display: block; width: 100%; height: auto; }
-  #tablewrap { margin: 12px 16px 24px; overflow-x: auto; }
+  #tablewrap { margin: 12px 16px 24px; cursor: pointer; }
   #tablewrap .tip { font-size: 12px; color: #666; margin: 0 0 6px; }
-  table { border-collapse: collapse; background: #fff; font-size: 13px; min-width: 50%; }
+  #tablewrap h3 { font-size: 15px; margin: 18px 0 6px; }
+  #tablewrap .tw { overflow-x: auto; }
+  table { border-collapse: collapse; background: #fff; font-size: 13px; min-width: 50%;
+          cursor: pointer; }
   th, td { border: 1px solid #ddd; padding: 4px 10px; text-align: left; white-space: nowrap; }
   th { cursor: pointer; user-select: none; background: #f0f0ee; position: sticky; top: 0; }
   th:hover { background: #e2e8ee; }
@@ -128,8 +132,8 @@ REVIEW_TEMPLATE = """<!doctype html>
   <h1>__NAME__</h1><span class="sub">__SUBTITLE__</span>
   <span class="note">throw-away review page — data is read-only</span>
 </header>
-<div id="tabs"></div>
 <div id="drawing"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="tabs"></div>
 <div id="tablewrap"></div>
 <script>
 const ZIPMAP = __ZIPMAP_JSON__;   // rendered as-is, never mutated
@@ -168,7 +172,7 @@ function renderTabs() {
   document.getElementById("tabs").innerHTML = ZIPMAP.types.map(t => {
     const on = t.name === state.active;
     return `<button data-tab="${esc(t.name)}" class="${on ? "active" : ""}"
-      style="border-top-color:${t.color};${on ? "color:" + t.color : ""}">
+      style="border-bottom-color:${t.color};${on ? "color:" + t.color : ""}">
       ${esc(t.name)} <span class="n">(${t.items.length})</span></button>`;
   }).join("");
 }
@@ -184,38 +188,42 @@ function renderOverlay() {
   svg.innerHTML = `<image href="${PNG_URI}" width="${W}" height="${H}"/>` + layers.join("");
 }
 
-function renderTable() {
+function renderTables() {
   const wrap = document.getElementById("tablewrap");
-  const t = ZIPMAP.types.find(t => t.name === state.active);
-  if (!t) { wrap.innerHTML = ""; return; }
-  const lk = state.labelKey[t.name];
-  const head = t.columns.map(c =>
-    `<th data-col="${esc(c)}" class="${c === lk ? "labelcol" : ""}"
-     style="${c === lk ? "background:" + t.color : ""}" title="use as map label">${esc(c)}</th>`
-  ).join("");
-  const rows = t.items.map(it =>
-    `<tr>${t.columns.map(c => `<td>${esc(cell(it && it[c]))}</td>`).join("")}</tr>`
-  ).join("");
-  wrap.innerHTML = `<p class="tip">Click a column header to use it as the map label
-    (render-only; the data itself never changes).</p>
-    <table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  if (!ZIPMAP.types.length) { wrap.innerHTML = ""; return; }
+  const parts = [`<p class="tip">Click a column header to use it as the map label
+    (render-only; the data itself never changes).</p>`];
+  for (const t of ZIPMAP.types) {
+    const lk = state.labelKey[t.name];
+    const head = t.columns.map(c =>
+      `<th data-type="${esc(t.name)}" data-col="${esc(c)}" class="${c === lk ? "labelcol" : ""}"
+       style="${c === lk ? "background:" + t.color : ""}" title="use as map label">${esc(c)}</th>`
+    ).join("");
+    const rows = t.items.map(it =>
+      `<tr>${t.columns.map(c => `<td>${esc(cell(it && it[c]))}</td>`).join("")}</tr>`
+    ).join("");
+    parts.push(`<h3 style="color:${t.color}">${esc(t.name)} <span style="opacity:0.65;font-weight:400">(${t.items.length})</span></h3>
+      <div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`);
+  }
+  wrap.innerHTML = parts.join("");
 }
 
-function renderAll() { renderTabs(); renderOverlay(); renderTable(); }
+function renderAll() { renderTabs(); renderOverlay(); renderTables(); }
 
 document.getElementById("tabs").addEventListener("click", e => {
   const btn = e.target.closest("[data-tab]");
   if (!btn) return;
   state.active = btn.dataset.tab === state.active ? null : btn.dataset.tab;
-  renderAll();
+  renderTabs();
+  renderOverlay();
 });
 
 document.getElementById("tablewrap").addEventListener("click", e => {
   const th = e.target.closest("[data-col]");
-  if (!th || !state.active) return;
-  state.labelKey[state.active] = th.dataset.col;
+  if (!th) return;
+  state.labelKey[th.dataset.type] = th.dataset.col;
   renderOverlay();
-  renderTable();
+  renderTables();
 });
 
 renderAll();
@@ -244,6 +252,8 @@ def main(argv: list[str] | None = None) -> int:
     out.write_text(doc, encoding="utf-8")
     total = sum(len(d.get("items", [])) for d in datasets.values())
     print(f"wrote {out} ({total} item(s), {len(datasets)} type(s))")
+    print("  open it in a browser — the HTML embeds the drawing as base64 and is "
+          "not for reading")
     return 0
 
 

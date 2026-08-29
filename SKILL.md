@@ -14,6 +14,8 @@ description: >-
   For many drawings, write a conversion script/skill/MCP server into this
   standard rather than hand-mapping each. Steps chain via scripts/zm.py.
   Image-only zipmaps need only the stdlib; PDF-backed ones need pymupdf.
+  Outputs embed base64 (b64/pdf_b64, data-URI HTML) that is machine-only:
+  never read it into context — validate/summarize instead.
 license: MIT
 ---
 
@@ -40,6 +42,35 @@ it to `sys.path` itself. Image-only zipmaps run on the **standard library
 alone**; PDF-backed zipmaps additionally need `pymupdf`
 (`pip install pymupdf`). If `jsonschema` is installed it is used for schema
 validation; otherwise a bundled draft-07-subset validator takes over.
+
+## Base64 is for machines only — NEVER read it
+
+Three outputs of this skill carry large base64 payloads:
+
+- `.zipmap.json` documents — the `b64` (PNG) and `pdf_b64` (PDF) fields
+- generated HTML (`*_overlay.html`, `*_review.html`, `*_viewer.html`) — the
+  drawing embedded as a `data:image/png;base64,…` URI
+- `.zipmap` / `.zipmapt` archives — binary zip
+
+**Every one of them exists to be consumed by another program** — a browser, an
+API endpoint, the scripts here — **never by you.** Do not Read, cat, grep,
+print, or paste any of them into the conversation, not even "just to verify."
+Base64 carries zero inferable information, and reading one export can burn
+hundreds of thousands of tokens and minutes of wall time. This is the single
+most expensive mistake made with this skill.
+
+What to do instead:
+
+| You want to… | Do this — never open the file |
+|---|---|
+| verify an export | `zm.py validate mymap.zipmap.json` → verdict + summary |
+| know what a `.zipmap` holds | `zm.py open …` or `validate …` → printed summary |
+| see the drawing | Read `mymap/img/drawing.png` (renders as an image), or tell the user to open the HTML in a browser |
+| inspect non-b64 fields of an export | `jq 'del(.b64,.pdf_b64)' mymap.zipmap.json`, or an equivalent small Python snippet |
+| send the payload | POST the **file** (`--data-binary @-` / `@file`) — never inline its contents into a command |
+
+The scripts already print everything you need to know (paths, sizes, item
+counts, validation verdicts). Trust the printed report; the turn ends there.
 
 ## The format is open on purpose
 
@@ -289,7 +320,7 @@ running the script directly. The individual scripts all still work unchanged.
 | `scripts/to_json.py` | **Export to `<name>.zipmap.json`** — base64 PNG (web) + base64 single-page PDF (turnover) + the extraction record + pixel-space items grouped by server-side `schema_id`, ready to POST. Takes a folder or a `.zipmap`. `--no-pdf` / `--no-extracted-data` / `--extracted-data FILE`. |
 | `scripts/make_template.py` | Build a `.zipmapt` (schemata only) from a working folder, a `.zipmap`, or `--types` starters. |
 | `scripts/render.py` | Self-contained HTML overlay of the `img/` layer (embedded PNG + SVG pins/rects/labels, color per type) **plus one data table per item type below the map** showing every field of every item. Zero deps; the fastest visual proof. |
-| `scripts/review.py` | **Throw-away HTML review page** for a human to check a map before it is uploaded to a tracking system: tabs per item type (name + count), active type's labels at 50% opacity / others at 20%, full JSON data table below the image, and click-a-column-header to switch which field is drawn as the map label (render-only, never mutates data). Zero deps. Produce it **on request** when the user wants to review a map. |
+| `scripts/review.py` | **Throw-away HTML review page** for a human to check a map before it is uploaded to a tracking system: layer tabs under the image (one per item type: name + count), active type's labels at 50% opacity / others at 20%, one full JSON data table per type below the tabs (always all types), and click-a-column-header to switch which field is drawn as the map label (render-only, never mutates data). Zero deps. Produce it **on request** when the user wants to review a map. |
 | `scripts/view.py` | Interactive single-file HTML viewer: pan/zoom, layer toggles, clickable items with a detail panel. Zero deps. Its `build_viewer_html()` function and embedded `ZIPMAP` JSON block are the reference pattern for building a custom web viewer or editor. |
 | `scripts/print_pdf.py` | Print a zipmap to a paginated PDF (drawing overlay page + item tables) with **fpdf2** (`pip install fpdf2`). Rarely needed, but it is the worked guide for constructing maps as PDFs — pixel→page-mm math, callout drawing, tabulation. |
 | `scripts/labels.py` | **Capture pre-labeled drawings**: list every text label on the PDF with its bounding box (pymupdf text layer — deterministic, no AI), filter by `--pattern` regex, and `--emit <type>` a ready `pdf/<type>.json` of rect items sitting on the label text. See **Pre-labeled drawings** below. |
@@ -432,7 +463,9 @@ python scripts/to_json.py mymap --no-extracted-data         # omit the record
 
 (Use `to_json.py` directly for `--stdout`: the document goes to stdout, so it
 wants its own invocation — `zm.py --json` refuses that combination rather than
-wrap a base64 PNG in a JSON line.)
+wrap a base64 PNG in a JSON line. `--stdout` is only ever for **piping** into
+curl/gzip as above; never run it bare, and never read the written
+`.zipmap.json` afterwards — `validate` it.)
 
 Get real ids from the tracking system's map-item schema list — **never
 invent one**; if none is known, ask the user rather than guessing. For QC
@@ -597,7 +630,10 @@ After creating or modifying a zipmap, tell the user the archive path and
 give them the `render.py` HTML overlay (or a summary from `open.py`) so they
 can see their items on the drawing — the overlay is the human-readable
 deliverable, and it always includes one data table per item type below the
-map so nothing is hidden behind clicks. Use `view.py` instead when the user wants to explore the map
+map so nothing is hidden behind clicks. Hand over the **path** and stop —
+never read a generated HTML file back to check it (it embeds the drawing as
+base64; see **Base64 is for machines only** above). If you need visual
+confirmation yourself, Read `img/drawing.png` directly. Use `view.py` instead when the user wants to explore the map
 (pan/zoom, click items for their fields), `review.py` when they ask to
 **review a map before uploading** it to a tracking system (tabbed layers,
 data table, switchable label field — a deliberate throw-away file),
